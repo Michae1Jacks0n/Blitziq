@@ -229,8 +229,6 @@
   renderAnswers();
 })();
 
-// --- Category Carousel ---
-
 (function () {
   const track = document.getElementById('cat-track');
   const prevBtn = document.getElementById('cat-prev');

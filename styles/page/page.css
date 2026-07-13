@@ -3769,6 +3769,65 @@ body.sidebar-collapsed .sidebar .sidebar-folder-quizzes.is-open .sidebar-folder-
   margin-top: 4px;
 }
 
+.profile-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 0.25rem 0;
+}
+
+.profile-section-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #111;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.profile-change-pw-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #111;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.profile-change-pw-btn__chevron {
+  transition: transform 0.22s ease;
+  opacity: 0.45;
+}
+
+.profile-change-pw-btn.is-open .profile-change-pw-btn__chevron {
+  transform: rotate(90deg);
+}
+
+.password-change-form-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease;
+}
+
+.password-change-form-wrap.is-open {
+  grid-template-rows: 1fr;
+}
+
+.password-change-form-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.password-change-form-wrap .overlay-form {
+  margin-top: 0.85rem;
+}
+
 .help-item {
   padding: 0.875rem 1rem;
   background: #f9fafb;

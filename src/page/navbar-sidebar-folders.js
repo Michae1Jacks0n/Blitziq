@@ -18,6 +18,21 @@
 
   const settingsBtn = document.getElementById('settings-btn');
   const settingsDropdown = document.getElementById('settings-dropdown');
+  const btnTogglePw = document.getElementById('btn-toggle-change-password');
+  const pwFormWrap  = document.getElementById('password-change-form-wrap');
+
+  function closePasswordForm() {
+    btnTogglePw?.classList.remove('is-open');
+    pwFormWrap?.classList.remove('is-open');
+  }
+
+  btnTogglePw?.addEventListener('click', () => {
+    const isOpen = pwFormWrap?.classList.toggle('is-open');
+    btnTogglePw.classList.toggle('is-open', isOpen);
+    if (isOpen) {
+      setTimeout(() => document.getElementById('new-password')?.focus(), 260);
+    }
+  });
 
   if (settingsBtn && settingsDropdown) {
     settingsBtn.addEventListener('click', e => {
@@ -47,6 +62,15 @@
     el.removeAttribute('aria-hidden');
     document.body.style.overflow = 'hidden';
     settingsDropdown.classList.remove('is-open');
+
+    if (id === 'settings-profile-overlay') {
+      document.getElementById('form-change-password')?.reset();
+      const errorEl = document.getElementById('profile-password-error');
+      const successEl = document.getElementById('profile-password-success');
+      if (errorEl) errorEl.style.display = 'none';
+      if (successEl) successEl.style.display = 'none';
+      closePasswordForm();
+    }
   }
 
   function closeAllSettingsModals() {
@@ -104,6 +128,55 @@
     overlay.addEventListener('click', e => {
       if (e.target === overlay) closeAllSettingsModals();
     });
+  });
+
+  document.getElementById('form-change-password')?.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const form       = e.target;
+    const errorEl     = document.getElementById('profile-password-error');
+    const successEl   = document.getElementById('profile-password-success');
+    const btn         = document.getElementById('btn-change-password-submit');
+    const btnText     = btn.querySelector('.overlay-submit-text');
+    const spinner     = btn.querySelector('.overlay-spinner');
+
+    errorEl.style.display   = 'none';
+    successEl.style.display = 'none';
+
+    const newPassword     = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-new-password').value;
+
+    if (newPassword !== confirmPassword) {
+      errorEl.textContent = typeof t === 'function' ? t('password_mismatch') : 'New passwords do not match.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    spinner.style.display = 'inline-block';
+
+    try {
+      const body = new URLSearchParams(new FormData(form));
+      const res  = await fetch('php/change_password.php', { method: 'POST', body });
+      const data = await res.json();
+
+      if (data.success) {
+        successEl.textContent = typeof t === 'function' ? t('password_updated_success') : data.message;
+        successEl.style.display = 'block';
+        form.reset();
+      } else {
+        errorEl.textContent = data.message || (typeof t === 'function' ? t('password_error_generic') : 'Something went wrong.');
+        errorEl.style.display = 'block';
+      }
+    } catch {
+      errorEl.textContent = typeof t === 'function' ? t('password_error_network') : 'Network error. Please try again.';
+      errorEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btnText.style.display = '';
+      spinner.style.display = 'none';
+    }
   });
 
   document.getElementById('btn-avatar-profile')?.addEventListener('click', e => {
@@ -181,8 +254,6 @@
 
   updateThemeSettingsIcon();
 
-  // --- Bell / Notifications panel ---
-
   function openNotif() {
     notifOverlay.classList.add('is-open');
     notifOverlay.removeAttribute('aria-hidden');
@@ -206,8 +277,6 @@
     });
   }
 
-  // --- Sidebar collapse ---
-
   if (localStorage.getItem('blitziq-sidebar') === '1') {
     document.body.classList.add('sidebar-collapsed');
   }
@@ -219,8 +288,6 @@
       localStorage.setItem('blitziq-sidebar', collapsed ? '1' : '0');
     });
   }
-
-  // --- Section switching ---
 
   const navLinks = document.querySelectorAll('.navbar-links a[data-section]');
   const sections = document.querySelectorAll('.page-section');
@@ -246,8 +313,6 @@
   if (initialHash && document.getElementById('section-' + initialHash)) {
     switchSection(initialHash);
   }
-
-  // --- Folders ---
 
   const MAX_FOLDERS = 6;
   let dragSrcIndex = -1;
@@ -490,12 +555,9 @@
     e.stopPropagation();
     row.classList.add('is-removing');
     setTimeout(() => {
-      // 1. sterge folderul
       const folders = getFolders();
       folders.splice(index, 1);
       saveFolders(folders);
-
-      // 2. update quiz-uri: scoate referinta la folderul sters si shift indexuri
       const quizzes = getQuizzes();
       quizzes.forEach(q => {
         if (!q.folders || !q.folders.length) return;
@@ -504,19 +566,13 @@
       });
       localStorage.setItem('blitziq-quizzes', JSON.stringify(quizzes));
       syncToServer();
-
-      // 3. re-sincronizeaza array-ul din quiz-edit.js
       if (typeof window.blitziqReloadQuizzes === 'function') {
         window.blitziqReloadQuizzes();
       }
-
-      // 4. inchide dropdown-ul daca e deschis
       const folderDropdown = document.getElementById('qe-folder-dropdown');
       if (folderDropdown) {
         folderDropdown.classList.remove('is-open');
       }
-
-      // 5. re-render sidebar
       renderFolders();
     }, 220);
   });

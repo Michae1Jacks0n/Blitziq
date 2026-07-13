@@ -384,6 +384,22 @@ body.dark-mode .profile-email {
   color: #64748b;
 }
 
+body.dark-mode .profile-section-title {
+  color: #e2e8f0;
+}
+
+body.dark-mode .profile-divider {
+  background: #2a2a3a;
+}
+
+body.dark-mode .profile-change-pw-btn {
+  color: #e2e8f0;
+}
+
+body.dark-mode .profile-change-pw-btn__chevron {
+  filter: invert(1);
+}
+
 body.dark-mode .help-item {
   background: #151520;
   border-color: #2a2a3a;

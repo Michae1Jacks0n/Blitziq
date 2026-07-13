@@ -370,6 +370,34 @@ if ($logged_in) {
         <p class="profile-name"><?= $username ?></p>
         <p class="profile-email"><?= $logged_in ? htmlspecialchars($_SESSION['email'] ?? 'No email') : '' ?></p>
       </div>
+
+      <div class="profile-divider"></div>
+
+      <button type="button" class="profile-change-pw-btn" id="btn-toggle-change-password">
+        <span class="profile-change-pw-btn__label" data-i18n="change_password_title">Change password</span>
+        <img src="img/arrow-right2.png" width="12" height="12" alt="" class="profile-change-pw-btn__chevron">
+      </button>
+
+      <div class="password-change-form-wrap" id="password-change-form-wrap">
+        <div class="password-change-form-inner">
+          <div id="profile-password-error" class="overlay-alert" style="display:none;"></div>
+          <div id="profile-password-success" class="overlay-alert overlay-alert--success" style="display:none;"></div>
+          <form class="overlay-form" id="form-change-password" novalidate>
+            <div class="overlay-field">
+              <label for="new-password" data-i18n="new_password_label">New password</label>
+              <input id="new-password" name="new_password" type="password" autocomplete="new-password" minlength="8" required>
+            </div>
+            <div class="overlay-field">
+              <label for="confirm-new-password" data-i18n="confirm_new_password_label">Confirm new password</label>
+              <input id="confirm-new-password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" required>
+            </div>
+            <button type="submit" class="overlay-submit" id="btn-change-password-submit">
+              <span class="overlay-submit-text" data-i18n="save_password_btn">Update password</span>
+              <span class="overlay-spinner" style="display:none;"></span>
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -1204,6 +1204,25 @@ body.dark-mode .qe-field__input option {
   color: #e2e8f0;
 }
 
+body.dark-mode .qe-image-upload-btn {
+  background: #1f1535;
+  border-color: #7c3aed;
+  color: #a78bfa;
+}
+
+body.dark-mode .qe-image-upload-btn:hover {
+  background: #2d1f4e;
+  border-color: #8b5cf6;
+}
+
+body.dark-mode .qe-image-preview {
+  border-color: #2a2a3a;
+}
+
+body.dark-mode .qe-image-status {
+  color: #94a3b8;
+}
+
 body.dark-mode .qe-divider {
   background: #2a2a3a;
 }

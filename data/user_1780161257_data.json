@@ -23,28 +23,29 @@
             "questions": [
                 {
                     "index": 0,
-                    "text": "",
+                    "text": "terterterte",
                     "answers": [
                         {
-                            "text": "",
+                            "text": "rtret",
                             "correct": true
                         },
                         {
-                            "text": "",
+                            "text": "retert",
                             "correct": false
                         },
                         {
-                            "text": "",
+                            "text": "terte",
                             "correct": false
                         },
                         {
-                            "text": "",
+                            "text": "tertert",
                             "correct": false
                         }
                     ],
                     "type": "single",
                     "time": 30,
-                    "points": 10
+                    "points": 10,
+                    "image": ""
                 },
                 {
                     "index": 1,
@@ -290,6 +291,12 @@
         }
     ],
     "notifs": [
+        {
+            "id": "1784115069832",
+            "ts": 1784115069832,
+            "read": false,
+            "text": "\"fsdvdv\" has been published successfully."
+        },
         {
             "id": "1781358453199",
             "ts": 1781358453199,

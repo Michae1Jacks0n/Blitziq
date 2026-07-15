@@ -36,6 +36,7 @@
     const questions = Array.from({ length: count }, (_, i) => ({
       index: i,
       text: '',
+      image: '',
       answers: Array.from({ length: ansCount }, () => ({ text: '', correct: false })),
       type: 'single',
       time: Math.max(5, Math.min(300, parseInt(payload.timePerQuestion) || 30)),
@@ -282,6 +283,23 @@
               <label class="qe-field__label">${t('editor_question_label')}</label>
               <textarea class="qe-field__input qe-field__input--textarea" id="qe-q-text" placeholder="${t('question_text_placeholder')}" rows="3"></textarea>
             </div>
+            <div class="qe-field">
+              <label class="qe-field__label">${t('editor_image_label')}</label>
+              <input type="file" id="qe-q-image-file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">
+              <button class="qe-image-upload-btn" id="qe-q-image-browse" type="button">
+                <img src="img/upload.png" width="14" height="14" alt="">
+                ${t('editor_image_upload')}
+              </button>
+              <div class="qe-image-preview-wrap" id="qe-q-image-wrap" style="display:none">
+                <img class="qe-image-preview" id="qe-q-image-preview" alt="">
+                <button class="qe-image-remove-overlay" id="qe-q-image-clear" type="button" title="${t('remove')}">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              <span class="qe-image-status" id="qe-q-image-status"></span>
+            </div>
             <div class="qe-meta-row">
               <div class="qe-field qe-field--small">
                 <label class="qe-field__label">${t('time_sec')}</label>
@@ -428,6 +446,7 @@
       const newQ = {
         index: quiz.questions.length,
         text: '',
+        image: '',
         answers: Array.from({ length: quiz.answerCount }, () => ({ text: '', correct: false })),
         type: 'single',
         time: quiz.timePerQ,
@@ -486,7 +505,7 @@
         }
         if (quiz.questions.length === 0) {
           quiz.questions.push({
-            index: 0, text: '',
+            index: 0, text: '', image: '',
             answers: Array.from({ length: quiz.answerCount }, () => ({ text: '', correct: false })),
             type: 'single', time: quiz.timePerQ, points: quiz.points,
           });
@@ -558,6 +577,67 @@
     if (!q) return;
     document.getElementById('qe-q-label').textContent = `${t('editor_q_of')} ${index + 1} ${t('editor_of')} ${quiz.questions.length}`;
     document.getElementById('qe-q-text').value = q.text || '';
+
+    const fileInput = document.getElementById('qe-q-image-file');
+    const browseBtn = document.getElementById('qe-q-image-browse');
+    const clearBtn = document.getElementById('qe-q-image-clear');
+    const statusEl = document.getElementById('qe-q-image-status');
+    refreshImageUI(q.image);
+
+    if (fileInput) {
+      const freshFileInput = fileInput.cloneNode(true);
+      fileInput.parentNode.replaceChild(freshFileInput, fileInput);
+      freshFileInput.addEventListener('change', () => {
+        const file = freshFileInput.files[0];
+        if (!file) return;
+        const maxSize = 5 * 1024 * 1024;
+        if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
+          if (statusEl) statusEl.textContent = t('editor_image_bad_type');
+          return;
+        }
+        if (file.size > maxSize) {
+          if (statusEl) statusEl.textContent = t('editor_image_too_big');
+          return;
+        }
+        if (statusEl) statusEl.textContent = t('editor_image_uploading');
+        const formData = new FormData();
+        formData.append('image', file);
+        fetch('php/upload_image.php', { method: 'POST', body: formData })
+          .then(r => r.json())
+          .then(res => {
+            if (res.success) {
+              q.image = res.path;
+              saveQuizzes();
+              refreshImageUI(q.image);
+              if (statusEl) statusEl.textContent = '';
+            } else {
+              if (statusEl) statusEl.textContent = res.message || t('editor_image_upload_failed');
+            }
+          })
+          .catch(() => {
+            if (statusEl) statusEl.textContent = t('editor_image_upload_failed');
+          });
+      });
+    }
+
+    if (browseBtn) {
+      const freshBrowseBtn = browseBtn.cloneNode(true);
+      browseBtn.parentNode.replaceChild(freshBrowseBtn, browseBtn);
+      freshBrowseBtn.addEventListener('click', () => {
+        document.getElementById('qe-q-image-file')?.click();
+      });
+    }
+
+    if (clearBtn) {
+      const freshClearBtn = clearBtn.cloneNode(true);
+      clearBtn.parentNode.replaceChild(freshClearBtn, clearBtn);
+      freshClearBtn.addEventListener('click', () => {
+        q.image = '';
+        saveQuizzes();
+        refreshImageUI('');
+        if (statusEl) statusEl.textContent = '';
+      });
+    }
 
     const timeInput = document.getElementById('qe-q-time');
     timeInput.value = Math.max(5, Math.min(300, q.time || quiz.timePerQ));
@@ -707,6 +787,23 @@
     document.querySelectorAll('.qe-answer-input').forEach((input, i) => {
       if (q.answers[i]) q.answers[i].text = input.value;
     });
+  }
+
+  function refreshImageUI(url) {
+    const browseBtn = document.getElementById('qe-q-image-browse');
+    const wrap = document.getElementById('qe-q-image-wrap');
+    const preview = document.getElementById('qe-q-image-preview');
+    const hasImage = !!(url && url.trim());
+    if (hasImage) {
+      preview.src = url.trim();
+      preview.onerror = () => { if (wrap) wrap.style.display = 'none'; if (browseBtn) browseBtn.style.display = ''; };
+      if (wrap) wrap.style.display = '';
+      if (browseBtn) browseBtn.style.display = 'none';
+    } else {
+      if (preview) preview.removeAttribute('src');
+      if (wrap) wrap.style.display = 'none';
+      if (browseBtn) browseBtn.style.display = '';
+    }
   }
 
   function saveCurrentQuestion(quiz) {

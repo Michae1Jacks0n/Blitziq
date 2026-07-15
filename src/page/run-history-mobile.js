@@ -126,6 +126,7 @@
   const scoreVal  = document.getElementById('qr-score-val');
   const qNum      = document.getElementById('qr-q-num');
   const qText     = document.getElementById('qr-q-text');
+  const qImage    = document.getElementById('qr-q-image');
   const answersEl = document.getElementById('qr-answers');
   const feedback  = document.getElementById('qr-feedback');
   const nextBtn   = document.getElementById('qr-next-btn');
@@ -135,6 +136,7 @@
     if (quiz.questions && quiz.questions.length > 0) {
       return quiz.questions.map(q => ({
         text: q.text || '(No question text)',
+        image: q.image || '',
         answers: q.answers || [],
         type: q.type || 'single',
         time: q.time || quiz.timePerQ || 30,
@@ -289,6 +291,17 @@
       ? `${t('runner_q_of')} ${current} ${t('runner_of')} ${total}`
       : `${t('runner_q_of')} ${current}`;
     qText.textContent = q.text || '(No question text)';
+
+    if (qImage) {
+      if (q.image && q.image.trim()) {
+        qImage.src = q.image.trim();
+        qImage.style.display = '';
+        qImage.onerror = () => { qImage.style.display = 'none'; };
+      } else {
+        qImage.style.display = 'none';
+        qImage.removeAttribute('src');
+      }
+    }
 
     const showTimer = (state.quiz.displayOptions || []).includes('show-timer');
     const timerNumEl = document.getElementById('qr-timer-val');

@@ -864,6 +864,7 @@ if ($logged_in) {
 
   <div class="qr-question" id="qr-question-wrap">
     <div class="qr-q-num" id="qr-q-num"></div>
+    <img class="qr-q-image" id="qr-q-image" style="display:none" alt="">
     <h2 class="qr-q-text" id="qr-q-text"></h2>
   </div>
   

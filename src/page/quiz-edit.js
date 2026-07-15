@@ -287,7 +287,7 @@
               <label class="qe-field__label">${t('editor_image_label')}</label>
               <input type="file" id="qe-q-image-file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">
               <button class="qe-image-upload-btn" id="qe-q-image-browse" type="button">
-                <img src="img/upload.png" width="14" height="14" alt="">
+                <span class="qe-icon-upload"></span>
                 ${t('editor_image_upload')}
               </button>
               <div class="qe-image-preview-wrap" id="qe-q-image-wrap" style="display:none">

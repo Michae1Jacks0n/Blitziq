@@ -2027,6 +2027,21 @@ body.sidebar-collapsed .sidebar .sidebar-folder-quizzes.is-open .sidebar-folder-
   background: #ede9fe;
   border-color: #6d28d9;
 }
+.qe-icon-upload {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-image: url('../../img/upload.png');
+  mask-image: url('../../img/upload.png');
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
 .qe-image-status {
   display: block;
   font-size: 0.78rem;

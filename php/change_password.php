@@ -1,5 +1,6 @@
 <?php
 require_once 'functions.php';
+require_once 'db.php';
 session_start();
 header('Content-Type: application/json');
 
@@ -31,29 +32,34 @@ if ($newPassword !== $confirmPassword) {
     exit;
 }
 
-$users   = loadUsers();
-$updated = false;
+$result = ['success' => false, 'message' => 'Could not update the password.'];
 
-foreach ($users as &$u) {
-    $userId = $u['id'] ?? $u['username'];
-    if ($userId == $_SESSION['user_id']) {
-        if (password_verify($newPassword, $u['password_hash'])) {
-            echo json_encode(['success' => false, 'message' => 'New password must be different from the current one.']);
-            exit;
-        }
+try {
+    $pdo = DB::get();
 
-        $u['password_hash'] = password_hash($newPassword, PASSWORD_BCRYPT);
-        $updated = true;
-        break;
+    $select = $pdo->prepare('SELECT parola_hash FROM useri WHERE id_user = :id AND activ = 1');
+    $select->execute([':id' => (int) $_SESSION['user_id']]);
+    $user = $select->fetch();
+
+    if (!$user) {
+        $result = ['success' => false, 'message' => 'User not found.'];
+    } elseif (password_verify($newPassword, $user['parola_hash'])) {
+        $result = ['success' => false, 'message' => 'New password must be different from the current one.'];
+    } else {
+        $update = $pdo->prepare('UPDATE useri SET parola_hash = :h WHERE id_user = :id');
+        $update->execute([
+            ':h'  => password_hash($newPassword, PASSWORD_BCRYPT),
+            ':id' => (int) $_SESSION['user_id'],
+        ]);
+        $result = ['success' => true, 'message' => 'Password updated successfully.'];
     }
+} catch (PDOException $e) {
+    error_log('[BlitzIQ] change_password: ' . $e->getMessage());
+    $result = ['success' => false, 'message' => 'A database error occurred. Please try again.'];
+} catch (RuntimeException $e) {
+    $result = ['success' => false, 'message' => $e->getMessage()];
+} finally {
+    DB::close();
 }
-unset($u);
 
-if (!$updated) {
-    echo json_encode(['success' => false, 'message' => 'User not found.']);
-    exit;
-}
-
-saveUsers($users);
-
-echo json_encode(['success' => true, 'message' => 'Password updated successfully.']);
+echo json_encode($result);

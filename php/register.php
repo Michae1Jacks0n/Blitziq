@@ -1,5 +1,6 @@
 <?php
 require_once 'functions.php';
+require_once 'db.php';
 session_start();
 header('Content-Type: application/json');
 
@@ -23,7 +24,7 @@ if (!preg_match('/^[a-zA-Z0-9_]{3,30}$/', $username)) {
     exit;
 }
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 100) {
     echo json_encode(['success' => false, 'message' => 'Invalid email address.']);
     exit;
 }
@@ -38,27 +39,50 @@ if ($password !== $confirm) {
     exit;
 }
 
-$users = loadUsers();
+$result = ['success' => false, 'message' => 'Registration failed.'];
 
-foreach ($users as $u) {
-    if ($u['username'] === $username || $u['email'] === $email) {
-        echo json_encode(['success' => false, 'message' => 'Username or email already taken.']);
-        exit;
+try {
+    $pdo = DB::get();
+
+    $check = $pdo->prepare('SELECT username, email FROM useri WHERE username = :u OR email = :e');
+    $check->execute([':u' => $username, ':e' => $email]);
+    $taken = null;
+    foreach ($check->fetchAll() as $row) {
+        if (strcasecmp($row['username'], $username) === 0) {
+            $taken = 'Username already taken.';
+            break;
+        }
+        $taken = 'Email already registered.';
     }
+
+    if ($taken) {
+        $result = ['success' => false, 'message' => $taken];
+    } else {
+        $insert = $pdo->prepare('INSERT INTO useri (username, email, parola_hash) VALUES (:u, :e, :p)');
+        $insert->execute([
+            ':u' => $username,
+            ':e' => $email,
+            ':p' => password_hash($password, PASSWORD_BCRYPT),
+        ]);
+
+        session_regenerate_id(true);
+        $_SESSION['user_id']  = (int) $pdo->lastInsertId();
+        $_SESSION['username'] = $username;
+        $_SESSION['email']    = $email;
+        $result = ['success' => true, 'username' => $username];
+    }
+} catch (PDOException $e) {
+
+    if (($e->errorInfo[1] ?? 0) === 1062) {
+        $result = ['success' => false, 'message' => 'Username or email already taken.'];
+    } else {
+        error_log('[BlitzIQ] register: ' . $e->getMessage());
+        $result = ['success' => false, 'message' => 'A database error occurred. Please try again.'];
+    }
+} catch (RuntimeException $e) {
+    $result = ['success' => false, 'message' => $e->getMessage()];
+} finally {
+    DB::close();
 }
 
-$newUser = [
-    'id'            => time(),
-    'username'      => $username,
-    'email'         => $email,
-    'password_hash' => password_hash($password, PASSWORD_BCRYPT),
-];
-
-$users[] = $newUser;
-saveUsers($users);
-
-session_regenerate_id(true);
-$_SESSION['user_id']  = $newUser['id'];
-$_SESSION['username'] = $newUser['username'];
-
-echo json_encode(['success' => true, 'username' => $username]);
+echo json_encode($result);

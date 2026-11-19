@@ -1,11 +1,5 @@
 <?php
 declare(strict_types=1);
-/**
- * Pagina de administrare (lucrarea de laborator nr. 4)
- *  - useri:     CRUD complet (+ cautare, filtrare, sortare)
- *  - rezultate: adaugare + afisare (+ filtrare pe mai multe conditii, sortare)
- * Acces: doar utilizatorii listati in php/config.local.php la cheia 'admins'.
- */
 require_once __DIR__ . '/db.php';
 session_start();
 
@@ -28,8 +22,6 @@ if (!in_array($_SESSION['username'] ?? '', $admins, true)) {
 
 $_SESSION['csrf'] ??= bin2hex(random_bytes(16));
 
-/* ---------- utilitare ---------- */
-
 function back(string $tab, string $type, $messages): void
 {
     DB::close();
@@ -38,7 +30,6 @@ function back(string $tab, string $type, $messages): void
     exit;
 }
 
-/** Intreg valid in [min, max]; null daca e gol sau invalid. */
 function intIn($v, int $min, int $max = 2147483647): ?int
 {
     if ($v === null || trim((string) $v) === '') {
@@ -76,8 +67,6 @@ function checkUserFields(PDO $pdo, string $username, string $email, ?int $except
     }
     return $e;
 }
-
-/* ---------- actiuni POST ---------- */
 
 function handlePost(PDO $pdo): void
 {
@@ -198,7 +187,7 @@ function handlePost(PDO $pdo): void
             $scor = intIn($_POST['scor'], 0, 1000000);
             if ($scor === null) $errors[] = 'Scorul trebuie să fie un număr întreg pozitiv.';
         } elseif ($corecte !== null && $quiz) {
-            $scor = $corecte * (int) $quiz['puncte_raspuns'];   // implicit: corecte × puncte pe răspuns
+            $scor = $corecte * (int) $quiz['puncte_raspuns'];
         }
 
         $data = null;
@@ -225,8 +214,6 @@ function handlePost(PDO $pdo): void
     back('users', 'err', 'Acțiune necunoscută.');
 }
 
-/* ---------- date pentru afisare ---------- */
-
 $tab   = ($_GET['tab'] ?? 'users') === 'results' ? 'results' : 'users';
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -234,14 +221,12 @@ $fatal = null;
 $users = $results = $allUsers = $allQuizzes = [];
 $editUser = null;
 
-// filtre utilizatori
 $uQ     = trim((string) ($_GET['u_q'] ?? ''));
 $uActiv = in_array($_GET['u_activ'] ?? '', ['0', '1'], true) ? $_GET['u_activ'] : '';
 $uSortC = ['id_user', 'username', 'email', 'data_inregistrarii', 'nr_quizuri', 'nr_rezultate'];
 $uSort  = in_array($_GET['u_sort'] ?? '', $uSortC, true) ? $_GET['u_sort'] : 'id_user';
 $uDir   = ($_GET['u_dir'] ?? '') === 'desc' ? 'DESC' : 'ASC';
 
-// filtre rezultate
 $rUser   = intIn($_GET['r_user'] ?? null, 1);
 $rQuiz   = intIn($_GET['r_quiz'] ?? null, 1);
 $rMin    = intIn($_GET['r_min'] ?? null, 0, 100);
@@ -254,10 +239,9 @@ try {
     $pdo = DB::get();
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        handlePost($pdo);   // se termina mereu cu redirect
+        handlePost($pdo);
     }
 
-    // lista utilizatori (cautare + filtrare + sortare)
     $where = [];
     $p = [];
     if ($uQ !== '') {
@@ -279,7 +263,6 @@ try {
     $st->execute($p);
     $users = $st->fetchAll();
 
-    // utilizator in editare
     $editId = intIn($_GET['edit'] ?? null, 1);
     if ($tab === 'users' && $editId) {
         $st = $pdo->prepare('SELECT id_user, username, email, activ FROM useri WHERE id_user = :id');
@@ -287,7 +270,6 @@ try {
         $editUser = $st->fetch() ?: null;
     }
 
-    // lista rezultate (filtre pe mai multe conditii + sortare)
     $where = [];
     $p = [];
     if ($rUser)  { $where[] = 'id_user = :ru';  $p[':ru'] = $rUser; }
@@ -442,121 +424,4 @@ $csrf = h($_SESSION['csrf']);
           <form method="post" action="admin.php?tab=users">
             <input type="hidden" name="csrf" value="<?= $csrf ?>">
             <input type="hidden" name="action" value="user_toggle">
-            <input type="hidden" name="id_user" value="<?= (int) $u['id_user'] ?>">
-            <button type="submit" class="ghost"><?= $u['activ'] ? 'Dezactivează' : 'Activează' ?></button>
-          </form>
-          <form method="post" action="admin.php?tab=users" onsubmit="return confirm('Sigur ștergi utilizatorul <?= h(addslashes($u['username'])) ?>?');">
-            <input type="hidden" name="csrf" value="<?= $csrf ?>">
-            <input type="hidden" name="action" value="user_delete">
-            <input type="hidden" name="id_user" value="<?= (int) $u['id_user'] ?>">
-            <button type="submit" class="danger">Șterge</button>
-          </form>
-        </td>
-      </tr>
-      <?php endforeach; ?>
-    </table></div>
-    <?php endif; ?>
-  </div>
-
-<?php else: ?>
-
-  <div class="card">
-    <h2>Adaugă rezultat</h2>
-    <form class="row" method="post" action="admin.php?tab=results">
-      <input type="hidden" name="csrf" value="<?= $csrf ?>">
-      <input type="hidden" name="action" value="rezultat_create">
-      <label>Utilizator
-        <select name="id_user" required>
-          <option value="">— alege —</option>
-          <?php foreach ($allUsers as $u): if (!$u['activ']) continue; ?>
-            <option value="<?= (int) $u['id_user'] ?>"><?= h($u['username']) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </label>
-      <label>Quiz
-        <select name="id_quiz" required>
-          <option value="">— alege —</option>
-          <?php foreach ($allQuizzes as $q): ?>
-            <option value="<?= (int) $q['id_quiz'] ?>"><?= h($q['titlu']) ?> (<?= (int) $q['nr_intrebari'] ?> întrebări)</option>
-          <?php endforeach; ?>
-        </select>
-      </label>
-      <label>Răspunsuri corecte<input name="raspunsuri_corecte" inputmode="numeric" size="6" required></label>
-      <label>Scor (puncte, opțional)<input name="scor" inputmode="numeric" size="6"></label>
-      <label>Timp (secunde)<input name="timp_secunde" inputmode="numeric" size="6" placeholder="0"></label>
-      <label>Data completării (opțional)<input name="data_completarii" type="datetime-local"></label>
-      <button type="submit">Adaugă</button>
-    </form>
-  </div>
-
-  <div class="card">
-    <h2>Rezultate (<?= count($results) ?>)</h2>
-    <form class="row" method="get" action="admin.php" style="margin-bottom:14px">
-      <input type="hidden" name="tab" value="results">
-      <label>Utilizator
-        <select name="r_user">
-          <option value="">Toți</option>
-          <?php foreach ($allUsers as $u): ?>
-            <option value="<?= (int) $u['id_user'] ?>" <?= $rUser === (int) $u['id_user'] ? 'selected' : '' ?>><?= h($u['username']) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </label>
-      <label>Quiz
-        <select name="r_quiz">
-          <option value="">Toate</option>
-          <?php foreach ($allQuizzes as $q): ?>
-            <option value="<?= (int) $q['id_quiz'] ?>" <?= $rQuiz === (int) $q['id_quiz'] ? 'selected' : '' ?>><?= h($q['titlu']) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </label>
-      <label>Procent minim<input name="r_min" inputmode="numeric" size="4" value="<?= $rMin !== null ? (int) $rMin : '' ?>"></label>
-      <label>Rezultat
-        <select name="r_trecut">
-          <option value="">Toate</option>
-          <option value="1" <?= $rTrecut === '1' ? 'selected' : '' ?>>Trecut</option>
-          <option value="0" <?= $rTrecut === '0' ? 'selected' : '' ?>>Nepromovat</option>
-        </select>
-      </label>
-      <label>Sortare după
-        <select name="r_sort">
-          <?php foreach (['data_completarii' => 'Data', 'scor' => 'Scor', 'procent' => 'Procent', 'username' => 'Utilizator', 'titlu' => 'Quiz'] as $k => $lbl): ?>
-            <option value="<?= $k ?>" <?= $rSort === $k ? 'selected' : '' ?>><?= $lbl ?></option>
-          <?php endforeach; ?>
-        </select>
-      </label>
-      <label>Ordine
-        <select name="r_dir">
-          <option value="desc" <?= $rDir === 'DESC' ? 'selected' : '' ?>>Descrescător</option>
-          <option value="asc" <?= $rDir === 'ASC' ? 'selected' : '' ?>>Crescător</option>
-        </select>
-      </label>
-      <button type="submit">Aplică</button>
-      <a href="admin.php?tab=results"><button type="button" class="ghost">Resetează</button></a>
-    </form>
-
-    <?php if (!$results): ?>
-      <p class="empty">Niciun rezultat nu corespunde filtrelor.</p>
-    <?php else: ?>
-    <div class="wrap"><table>
-      <tr><th>ID</th><th>Utilizator</th><th>Quiz</th><th>Scor</th><th>Corecte</th><th>Procent</th><th>Stare</th><th>Timp</th><th>Data</th></tr>
-      <?php foreach ($results as $r): ?>
-      <tr>
-        <td><?= (int) $r['id_rezultat'] ?></td>
-        <td><?= h($r['username']) ?></td>
-        <td><?= h($r['titlu']) ?></td>
-        <td><?= (int) $r['scor'] ?></td>
-        <td><?= (int) $r['raspunsuri_corecte'] ?> / <?= (int) $r['nr_intrebari'] ?></td>
-        <td><?= h($r['procent']) ?>%</td>
-        <td><span class="tag <?= $r['trecut'] ? 'on' : 'off' ?>"><?= $r['trecut'] ? 'trecut' : 'nepromovat' ?></span></td>
-        <td><?= (int) $r['timp_secunde'] ?> s</td>
-        <td><?= h($r['data_completarii']) ?></td>
-      </tr>
-      <?php endforeach; ?>
-    </table></div>
-    <?php endif; ?>
-  </div>
-
-<?php endif; ?>
-</main>
-</body>
-</html>
+            <input type="hidden" na
